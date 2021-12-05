@@ -15,7 +15,7 @@ clean:
 
 package:
 	mkdir -p _build
-	cd _build && zip -qr "$(UUID)$(VSTRING).zip" ../src
+	cd src && zip -qr "../_build/$(UUID)$(VSTRING).zip" .
 
 enable:
 	gnome-extensions enable ${UUID}
