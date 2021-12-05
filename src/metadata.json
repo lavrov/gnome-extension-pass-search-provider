@@ -1,0 +1,8 @@
+{
+  "name": "Pass Search Provider",
+  "description": "Shows matching pass entries in gnome search",
+  "uuid": "gnome-extension-pass-search-provider.lavrov.github.com",
+  "shell-version": [
+    "3.36"
+  ]
+}
