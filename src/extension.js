@@ -65,12 +65,10 @@ const searchProvider = {
   },
 
   activateResult(result) {
-    let sub = Gio.Subprocess.new(['pass', result, '-c'], Gio.SubprocessFlags.STDOUT_PIPE);
+    let sub = Gio.Subprocess.new(['pass', result, '-c'], Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE);
     sub.communicate_utf8_async(null, null, (_, res) => {
-      let [ok, stdout] = sub.communicate_utf8_finish(res);
-      if (ok) {
-        main.notify('Pass', stdout);
-      }
+      let [ok, stdout, stderr] = sub.communicate_utf8_finish(res);
+      main.notify('Pass', stdout || stderr);
     });
   },
 
