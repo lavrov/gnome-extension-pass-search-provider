@@ -48,18 +48,6 @@ const searchProvider = {
     should_show: () => true,
   },
 
-  async getResultMetas(results, cb) {
-    cb(results.map(getResultMeta));
-  },
-
-  activateResult(result) {
-    util.spawn(['pass', result, '-c']);
-  },
-
-  filterResults(providerResults, maxResults) {
-    return providerResults.slice(0, maxResults);
-  },
-
   async getInitialResultSet(terms, cb) {
     let path = GLib.build_filenamev([GLib.get_home_dir(), ".password-store"]);
     let passStoreRoot = Gio.File.new_for_path(path);
@@ -70,6 +58,24 @@ const searchProvider = {
 
   async getSubsearchResultSet(_, terms, cb) {
     this.getInitialResultSet(terms, cb);
+  },
+
+  async getResultMetas(results, cb) {
+    cb(results.map(getResultMeta));
+  },
+
+  activateResult(result) {
+    let sub = Gio.Subprocess.new(['pass', result, '-c'], Gio.SubprocessFlags.STDOUT_PIPE);
+    sub.communicate_utf8_async(null, null, (_, res) => {
+      let [ok, stdout] = sub.communicate_utf8_finish(res);
+      if (ok) {
+        main.notify('Pass', stdout);
+      }
+    });
+  },
+
+  filterResults(providerResults, maxResults) {
+    return providerResults.slice(0, maxResults);
   }
 };
 
