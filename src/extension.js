@@ -84,7 +84,6 @@ function getResultMeta(id) {
   return {
     id: id,
     name: id,
-    clipboardText: id,
     createIcon() { return null },
   };
 }
