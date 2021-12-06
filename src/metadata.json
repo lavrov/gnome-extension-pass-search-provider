@@ -4,5 +4,6 @@
   "uuid": "gnome-extension-pass-search-provider.lavrov.github.com",
   "shell-version": [
     "3.36"
-  ]
+  ],
+  "url":"https://github.com/lavrov/gnome-extension-pass-search-provider"
 }
