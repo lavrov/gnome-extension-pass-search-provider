@@ -48,7 +48,7 @@ const searchProvider = {
     should_show: () => true,
   },
 
-  async getInitialResultSet(terms, cb) {
+  getInitialResultSet(terms, cb) {
     let path = GLib.build_filenamev([GLib.get_home_dir(), ".password-store"]);
     let passStoreRoot = Gio.File.new_for_path(path);
     let files = enumeratePassFiles(passStoreRoot, passStoreRoot, []);
@@ -56,11 +56,11 @@ const searchProvider = {
     cb(files);
   },
 
-  async getSubsearchResultSet(_, terms, cb) {
+  getSubsearchResultSet(_, terms, cb) {
     this.getInitialResultSet(terms, cb);
   },
 
-  async getResultMetas(results, cb) {
+  getResultMetas(results, cb) {
     cb(results.map(getResultMeta));
   },
 
