@@ -49,11 +49,15 @@ const searchProvider = {
   },
 
   getInitialResultSet(terms, cb) {
-    let path = GLib.build_filenamev([GLib.get_home_dir(), ".password-store"]);
-    let passStoreRoot = Gio.File.new_for_path(path);
-    let files = enumeratePassFiles(passStoreRoot, passStoreRoot, []);
-    files = files.filter(f => f.includes(terms));
-    cb(files);
+    if (terms.length >= 2) {
+      let path = GLib.build_filenamev([GLib.get_home_dir(), ".password-store"]);
+      let passStoreRoot = Gio.File.new_for_path(path);
+      let files = enumeratePassFiles(passStoreRoot, passStoreRoot, []);
+      files = files.filter(f => f.includes(terms));
+      cb(files);
+    } else {
+      cb([]);
+    }
   },
 
   getSubsearchResultSet(_, terms, cb) {
