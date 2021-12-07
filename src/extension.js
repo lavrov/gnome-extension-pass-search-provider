@@ -49,11 +49,12 @@ const searchProvider = {
   },
 
   getInitialResultSet(terms, cb) {
-    if (terms.length >= 2) {
+    let longEnough = terms.filter(term => term.length >= 2).length > 0
+    if (longEnough) {
       let path = GLib.build_filenamev([GLib.get_home_dir(), ".password-store"]);
       let passStoreRoot = Gio.File.new_for_path(path);
       let files = enumeratePassFiles(passStoreRoot, passStoreRoot, []);
-      files = files.filter(f => f.includes(terms));
+      files = files.filter(f => terms.every(term => f.includes(term)));
       cb(files);
     } else {
       cb([]);
