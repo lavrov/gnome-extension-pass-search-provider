@@ -64,8 +64,8 @@ const searchProvider = {
     cb(results.map(getResultMeta));
   },
 
-  activateResult(result) {
-    let sub = Gio.Subprocess.new(['pass', result, '-c'], Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE);
+  activateResult(passwordPath) {
+    let sub = Gio.Subprocess.new(['pass', 'show', '-c', passwordPath], Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE);
     sub.communicate_utf8_async(null, null, (_, res) => {
       let [ok, stdout, stderr] = sub.communicate_utf8_finish(res);
       main.notify('Pass', stdout || stderr);
