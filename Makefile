@@ -33,3 +33,7 @@ install:
 
 uninstall:
 	rm -rf $(INSTALLBASE)/$(INSTALLNAME)
+
+nested-session:
+	dbus-run-session -- env  MUTTER_DEBUG_DUMMY_MONITOR_SCALES=2 gnome-shell --nested --wayland
+

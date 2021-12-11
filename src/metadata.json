@@ -3,7 +3,7 @@
   "description": "Shows matching pass entries in gnome search",
   "uuid": "gnome-extension-pass-search-provider.lavrov.github.com",
   "shell-version": [
-    "3.36"
+    "3.36", "40"
   ],
   "url":"https://github.com/lavrov/gnome-extension-pass-search-provider"
 }
