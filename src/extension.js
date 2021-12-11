@@ -4,7 +4,10 @@ const Me = ExtensionUtils.getCurrentExtension();
 const { Gio, GLib } = imports.gi;
 const { main } = imports.ui;
 const util = imports.misc.util;
+const St = imports.gi.St;
 
+const Clipboard = St.Clipboard.get_default();
+const CLIPBOARD_TYPE = St.ClipboardType.CLIPBOARD;
 const icon = Gio.icon_new_for_string(`${Me.dir.get_path()}/icon.svg`);
 
 
@@ -70,10 +73,18 @@ const searchProvider = {
   },
 
   activateResult(passwordPath) {
-    let sub = Gio.Subprocess.new(['pass', 'show', '-c', passwordPath], Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE);
+    let sub = Gio.Subprocess.new(['pass', 'show', passwordPath], Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE);
     sub.communicate_utf8_async(null, null, (_, res) => {
       let [ok, stdout, stderr] = sub.communicate_utf8_finish(res);
-      main.notify('Pass', stdout || stderr);
+      let message;
+      if (stderr) {
+        message = stderr;
+      } else {
+        let lines =  stdout.split(/\r?\n/);
+        Clipboard.set_text(CLIPBOARD_TYPE, lines[0]);
+        message = `Copied ${passwordPath} to clipboard`;
+      }
+      main.notify("Pass", message);
     });
   },
 
