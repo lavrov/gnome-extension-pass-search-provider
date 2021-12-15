@@ -18,12 +18,11 @@ function init() {
 
 
 class Extension {
-  constructor() {
-  }
+  constructor() { }
 
   enable() {
     log(`Enabling ${Me.metadata.name}`);
-    this.instance = Object.create(searchProvider);
+    this.instance = new SearchProvider;
     getOverviewSearchResult()._registerProvider(this.instance);
   }
 
@@ -43,67 +42,99 @@ function getOverviewSearchResult() {
 }
 
 
-const searchProvider = {
-  appInfo: {
+class SearchProvider {
+
+  appInfo = {
     get_name: () => `Pass`,
     get_icon: () => icon,
     get_id: () => `pass-search-provider`,
     should_show: () => true,
-  },
+  }
 
   getInitialResultSet(terms, cb) {
-    let longEnough = terms.filter(term => term.length >= 2).length > 0
-    if (longEnough) {
-      let path = GLib.build_filenamev([GLib.get_home_dir(), ".password-store"]);
-      let passStoreRoot = Gio.File.new_for_path(path);
-      let files = enumeratePassFiles(passStoreRoot, passStoreRoot, []);
-      files = files.filter(f => terms.every(term => f.includes(term)));
-      cb(files);
-    } else {
-      cb([]);
-    }
-  },
+    this.fileTree = new PassStoreFileTree;
+    cb(this._searchInFileTree(terms));
+  }
 
   getSubsearchResultSet(_, terms, cb) {
-    this.getInitialResultSet(terms, cb);
-  },
+    cb(this._searchInFileTree(terms));
+  }
+
+  _searchInFileTree(terms) {
+    let longEnough = terms.filter(term => term.length >= 2).length > 0
+    if (longEnough) {
+      return this.fileTree.find(terms);
+    } else {
+      return [];
+    }
+  }
 
   getResultMetas(results, cb) {
-    cb(results.map(getResultMeta));
-  },
+    let getMeta = (entry) => {
+      let info = this.fileTree.get(entry);
+      return {
+        id: entry,
+        name: info.shortName,
+        description: info.directory,
+        createIcon() { return null },
+      }
+    };
+    cb(results.map(getMeta));
+  }
 
-  activateResult(passwordPath) {
-    let sub = Gio.Subprocess.new(['pass', 'show', passwordPath], Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE);
+  activateResult(entry) {
+    let sub = Gio.Subprocess.new(['pass', 'show', entry], Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE);
     sub.communicate_utf8_async(null, null, (_, res) => {
       let [ok, stdout, stderr] = sub.communicate_utf8_finish(res);
       let message;
       if (stderr) {
         message = stderr;
       } else {
-        let lines =  stdout.split(/\r?\n/);
+        let lines = stdout.split(/\r?\n/);
         Clipboard.set_text(CLIPBOARD_TYPE, lines[0]);
-        message = `Copied ${passwordPath} to clipboard`;
+        message = `Copied ${entry} to clipboard`;
       }
       main.notify("Pass", message);
     });
-  },
+  }
 
   filterResults(providerResults, maxResults) {
     return providerResults.slice(0, maxResults);
   }
-};
-
-
-function getResultMeta(id) {
-  return {
-    id: id,
-    name: id,
-    createIcon() { return null },
-  };
 }
 
 
-function enumeratePassFiles(root, dir, result) {
+class PassStoreFileTree {
+
+  constructor() {
+    let storePath = GLib.build_filenamev([GLib.get_home_dir(), ".password-store"]);
+    let storeRootDir = Gio.File.new_for_path(storePath);
+    this.entries = [];
+    this.files = {};
+    for (const [name, file] of enumerateGpgFiles(storeRootDir, [])) {
+      let path = storeRootDir.get_relative_path(file).slice(0, -4); // remove .gpg part
+      let directory = storeRootDir.get_relative_path(file.get_parent());
+      let shortName = name.slice(0, -4);
+      this.entries.push(path)
+      this.files[path] = {
+        shortName,
+        directory,
+        file
+      };
+    }
+  }
+
+  find(terms) {
+    return this.entries.filter(f => terms.every(term => f.includes(term)));
+  }
+
+  get(entry) {
+    return this.files[entry];
+  }
+}
+
+
+function enumerateGpgFiles(dir, result) {
   let enumerator = dir.enumerate_children('standard::name,standard::type', Gio.FileQueryInfoFlags.NONE, null);
   let info;
   while ((info = enumerator.next_file(null))) {
@@ -111,11 +142,10 @@ function enumeratePassFiles(root, dir, result) {
     let name = info.get_name();
     let child = enumerator.get_child(info);
     if (type == Gio.FileType.REGULAR && name.endsWith('.gpg')) {
-      let path = root.get_relative_path(child).slice(0, -4);
-      result.push(path);
+      result.push([name, child]);
     }
     else if (type == Gio.FileType.DIRECTORY && !info.get_is_hidden())
-      enumeratePassFiles(root, child, result);
+      enumerateGpgFiles(child, result);
   }
   return result;
 }
