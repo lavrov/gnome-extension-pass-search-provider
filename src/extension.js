@@ -1,14 +1,14 @@
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 
-const { Gio, GLib } = imports.gi;
+const { Gio, GLib, St } = imports.gi;
 const { main } = imports.ui;
 const util = imports.misc.util;
-const St = imports.gi.St;
 
 const Clipboard = St.Clipboard.get_default();
 const CLIPBOARD_TYPE = St.ClipboardType.CLIPBOARD;
-const icon = Gio.icon_new_for_string(`${Me.dir.get_path()}/icon.svg`);
+const appIcon = Gio.ThemedIcon.new_with_default_fallbacks(`password-app-symbolic`);
+const entryIcon = Gio.ThemedIcon.new_with_default_fallbacks(`dialog-password-symbolic`);
 
 
 function init() {
@@ -46,7 +46,7 @@ class SearchProvider {
 
   appInfo = {
     get_name: () => `Pass`,
-    get_icon: () => icon,
+    get_icon: () => appIcon,
     get_id: () => `pass-search-provider`,
     should_show: () => true,
   }
@@ -76,7 +76,12 @@ class SearchProvider {
         id: entry,
         name: info.shortName,
         description: info.directory,
-        createIcon() { return null },
+        createIcon(size) {
+          return new St.Icon({
+            gicon: entryIcon,
+            icon_size: size
+          });
+        }
       }
     };
     cb(results.map(getMeta));
