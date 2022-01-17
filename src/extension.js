@@ -5,10 +5,7 @@ const { Gio, GLib, St } = imports.gi;
 const { main } = imports.ui;
 const util = imports.misc.util;
 
-const Clipboard = St.Clipboard.get_default();
 const CLIPBOARD_TYPE = St.ClipboardType.CLIPBOARD;
-const appIcon = Gio.ThemedIcon.new_with_default_fallbacks(`password-app-symbolic`);
-const entryIcon = Gio.ThemedIcon.new_with_default_fallbacks(`dialog-password-symbolic`);
 
 
 function init() {
@@ -22,13 +19,14 @@ class Extension {
 
   enable() {
     log(`Enabling ${Me.metadata.name}`);
-    this.instance = new SearchProvider;
+    this.instance = new SearchProvider();
     getOverviewSearchResult()._registerProvider(this.instance);
   }
 
   disable() {
     log(`Disabling ${Me.metadata.name}`);
     getOverviewSearchResult()._unregisterProvider(this.instance);
+    this.instance = null;
   }
 }
 
@@ -44,9 +42,15 @@ function getOverviewSearchResult() {
 
 class SearchProvider {
 
+  constructor() {
+    this.clipboard = St.Clipboard.get_default();
+    this.appIcon = Gio.ThemedIcon.new_with_default_fallbacks(`password-app-symbolic`);
+    this.entryIcon = Gio.ThemedIcon.new_with_default_fallbacks(`dialog-password-symbolic`);
+  }
+
   appInfo = {
     get_name: () => `Pass`,
-    get_icon: () => appIcon,
+    get_icon: () => this.appIcon,
     get_id: () => `pass-search-provider`,
     should_show: () => true,
   }
@@ -70,6 +74,7 @@ class SearchProvider {
   }
 
   getResultMetas(results, cb) {
+    let self = this;
     let getMeta = (entry) => {
       let info = this.fileTree.get(entry);
       return {
@@ -78,7 +83,7 @@ class SearchProvider {
         description: info.directory,
         createIcon(size) {
           return new St.Icon({
-            gicon: entryIcon,
+            gicon: self.entryIcon,
             icon_size: size
           });
         }
@@ -96,7 +101,7 @@ class SearchProvider {
         message = stderr;
       } else {
         let lines = stdout.split(/\r?\n/);
-        Clipboard.set_text(CLIPBOARD_TYPE, lines[0]);
+        this.clipboard.set_text(CLIPBOARD_TYPE, lines[0]);
         message = `Copied ${entry} to clipboard`;
       }
       main.notify("Pass", message);
